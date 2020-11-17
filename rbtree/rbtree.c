@@ -85,7 +85,7 @@ void RB_example(void)
 	init();
 
 	////////// insert //////////
-	printk("\n////////// inert //////////\n");
+	printk("\n////////// insert //////////\n");
 
 	/* insert 1000 entries */
 	time1 = get_cycles();
