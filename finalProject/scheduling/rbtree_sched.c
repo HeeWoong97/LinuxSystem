@@ -7,41 +7,15 @@
 #include <asm/timex.h>
 #include <linux/ktime.h>
 #include <linux/sched.h>
-#include <linux/types.h>
+#include <linux/kmod.h>
 
 struct task_struct *result;
+u64 vruntime;
 
 struct my_node
 {
 	int value;
 	struct rb_node rb;
-};
-
-struct sched_param {
-	int sched_priority;
-};
-
-struct sched_attr {
-	__u32 size;
-
-	__u32 sched_policy;
-	__u64 sched_flags;
-
-	/* SCHED_NORMAL, SCHED_BATCH */
-	__s32 sched_nice;
-
-	/* SCHED_FIFO, SCHED_RR */
-	__u32 sched_priority;
-
-	/* SCHED_DEADLINE */
-	__u64 sched_runtime;
-	__u64 sched_deadline;
-	__u64 sched_period;
-
-	/* Utilization hints */
-	__u32 sched_util_min;
-	__u32 sched_util_max;
-
 };
 
 static struct rb_root_cached rbtree_1000_root = RB_ROOT_CACHED;
@@ -109,7 +83,6 @@ void RB_example(void)
 	rbtree_10000 = kmalloc_array(10000, sizeof(*rbtree_10000), GFP_KERNEL);
 	rbtree_100000 = kmalloc_array(100000, sizeof(*rbtree_100000), GFP_KERNEL);
 
-
 	prandom_seed_state(&rnd, 3141592653589793238ULL);
 	init();
 
@@ -119,10 +92,11 @@ void RB_example(void)
 	/* insert 1000 entries */
 	start = ktime_get();
 
+	result->se.vruntime = vruntime;
 	for (i = 0; i < 1000; i++) {
 		insert(rbtree_1000 + i, &rbtree_1000_root);
 	}
-	
+
 	end = ktime_get();
 
 	printk("insert(1000 entries): 0.%09lld secs\n", end - start);
@@ -130,8 +104,13 @@ void RB_example(void)
 	/* insert 10000 entries */
 	start = ktime_get();
 
+	result->se.vruntime = vruntime;
 	for (i = 0; i < 10000; i++) {
 		insert(rbtree_10000 + i, &rbtree_10000_root);
+		if (result->se.vruntime != vruntime) {
+			printk("vruntime changes at i = %d\n", i);
+			result->se.vruntime = vruntime;
+		}		
 	}
 	
 	end = ktime_get();
@@ -141,14 +120,18 @@ void RB_example(void)
 	/* insert 100000 entries */
 	start = ktime_get();
 
+	result->se.vruntime = vruntime;
 	for (i = 0; i < 100000; i++) {
 		insert(rbtree_100000 + i, &rbtree_100000_root);
+		if (result->se.vruntime != vruntime) {
+			printk("vruntime changes at i = %d\n", i);
+			result->se.vruntime = vruntime;
+		}		
 	}
 	
 	end = ktime_get();
 
 	printk("insert(100000 entries): 0.%09lld secs\n", end - start);
-	printk("rt_priority(after insert): %d\n", result->rt_priority);
 
 	////////// traverse //////////
 	printk("\n////////// search //////////\n");
@@ -156,7 +139,13 @@ void RB_example(void)
 	/* traverse 1000 entries */
 	start = ktime_get();
 
-	for (node = rb_first(&rbtree_1000_root.rb_root); node; node = rb_next(node));
+	result->se.vruntime = vruntime;
+	for (node = rb_first(&rbtree_1000_root.rb_root); node; node = rb_next(node)) {
+		if (result->se.vruntime != vruntime) {
+			printk("vruntime changes at i = %d\n", i);
+			result->se.vruntime = vruntime;
+		}		
+	}
 
 	end = ktime_get();
 
@@ -165,7 +154,13 @@ void RB_example(void)
 	/* traverse 10000 entries */
 	start = ktime_get();
 
-	for (node = rb_first(&rbtree_10000_root.rb_root); node; node = rb_next(node));
+	result->se.vruntime = vruntime;
+	for (node = rb_first(&rbtree_10000_root.rb_root); node; node = rb_next(node)) {
+		if (result->se.vruntime != vruntime) {
+			printk("vruntime changes at i = %d\n", i);
+			result->se.vruntime = vruntime;
+		}				
+	}
 
 	end = ktime_get();
 
@@ -174,12 +169,17 @@ void RB_example(void)
 	/* traverse 100000 entries */
 	start = ktime_get();
 
-	for (node = rb_first(&rbtree_100000_root.rb_root); node; node = rb_next(node));
+	result->se.vruntime = vruntime;
+	for (node = rb_first(&rbtree_100000_root.rb_root); node; node = rb_next(node)) {
+		if (result->se.vruntime != vruntime) {
+			printk("vruntime changes at i = %d\n", i);
+			result->se.vruntime = vruntime;
+		}		
+	}
 
 	end = ktime_get();
 
 	printk("search(100000 entries): 0.%09lld secs\n", end - start);
-	printk("rt_priority(after search): %d\n", result->rt_priority);
 
 	////////// delete //////////
 	printk("\n////////// delete //////////\n");
@@ -187,8 +187,13 @@ void RB_example(void)
 	/* delete 1000 entries */
 	start = ktime_get();
 
+	result->se.vruntime = vruntime;
 	for (i = 0; i < 1000; i++) {
 		erase(rbtree_1000 + i, &rbtree_1000_root);
+		if (result->se.vruntime != vruntime) {
+			printk("vruntime changes at i = %d\n", i);
+			result->se.vruntime = vruntime;
+		}		
 	}
 
 	end = ktime_get();
@@ -198,8 +203,13 @@ void RB_example(void)
 	/* delete 10000 entries */
 	start = ktime_get();
 
+	result->se.vruntime = vruntime;
 	for (i = 0; i < 10000; i++) {
 		erase(rbtree_10000 + i, &rbtree_10000_root);
+		if (result->se.vruntime != vruntime) {
+			printk("vruntime changes at i = %d\n", i);
+			result->se.vruntime = vruntime;
+		}		
 	}
 
 	end = ktime_get();
@@ -209,34 +219,29 @@ void RB_example(void)
 	/* delete 100000 entries */
 	start = ktime_get();
 
+	result->se.vruntime = vruntime;
 	for (i = 0; i < 100000; i++) {
 		erase(rbtree_100000 + i, &rbtree_100000_root);
+		if (result->se.vruntime != vruntime) {
+			printk("vruntime changes at i = %d\n", i);
+			result->se.vruntime = vruntime;
+		}		
 	}
 
 	end = ktime_get();
 
 	printk("delete(100000 entries): 0.%09lld secs\n", end - start);
-	printk("rt_priority(after delete): %d\n", result->rt_priority);
 }
 
 int __init rbtree_module_init(void)
 {
-	// struct sched_attr attr;
-	struct sched_param param;
-
 	result = pid_task(find_vpid((int) task_pid_nr(current)), PIDTYPE_PID);
 
-	param.sched_priority = 99;
-	// attr.sched_policy = SCHED_FIFO;
+	printk("\n********** rbtree_sched testing!! **********\n");
 
-	// sched_setattr(result, &attr);
-	sched_setscheduler(result, SCHED_FIFO, &param);
-
-	printk("\n********** rbtree_fifo testing!! **********\n");
-
-	printk("rt_priority: %d\n", result->rt_priority);
-	printk("scheduling policy: %d\n", result->policy);
 	printk("first vruntime: %lld\n", result->se.vruntime);
+
+	vruntime = result->se.vruntime;
 
 	RB_example();
 

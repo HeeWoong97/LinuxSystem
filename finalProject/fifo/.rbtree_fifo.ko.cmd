@@ -1,0 +1,1 @@
+cmd_/home/ungung97/LinuxSystem/finalProject/fifo/rbtree_fifo.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000  --build-id  -T ./scripts/module-common.lds -o /home/ungung97/LinuxSystem/finalProject/fifo/rbtree_fifo.ko /home/ungung97/LinuxSystem/finalProject/fifo/rbtree_fifo.o /home/ungung97/LinuxSystem/finalProject/fifo/rbtree_fifo.mod.o;  true

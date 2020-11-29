@@ -8,9 +8,6 @@
 #include <linux/ktime.h>
 #include <linux/sched.h>
 
-struct task_struct *result;
-u64 vruntime;
-
 struct my_node
 {
 	int value;
@@ -82,14 +79,10 @@ void RB_example(void)
 	rbtree_10000 = kmalloc_array(10000, sizeof(*rbtree_10000), GFP_KERNEL);
 	rbtree_100000 = kmalloc_array(100000, sizeof(*rbtree_100000), GFP_KERNEL);
 
-	result->se.vruntime = vruntime;
-	printk("\n********** rbtree testing!! **********\n");
-
 	prandom_seed_state(&rnd, 3141592653589793238ULL);
 	init();
 
 	////////// insert //////////
-	result->se.vruntime = vruntime;
 	printk("\n////////// insert //////////\n");
 
 	/* insert 1000 entries */
@@ -97,33 +90,28 @@ void RB_example(void)
 
 	for (i = 0; i < 1000; i++) {
 		insert(rbtree_1000 + i, &rbtree_1000_root);
-		result->se.vruntime = vruntime;
 	}
 	
 	end = ktime_get();
 
 	printk("insert(1000 entries): 0.%09lld secs\n", end - start);
 
-	result->se.vruntime = vruntime;
 	/* insert 10000 entries */
 	start = ktime_get();
 
 	for (i = 0; i < 10000; i++) {
 		insert(rbtree_10000 + i, &rbtree_10000_root);
-		result->se.vruntime = vruntime;
 	}
 	
 	end = ktime_get();
 
 	printk("insert(10000 entries): 0.%09lld secs\n", end - start);
 
-	result->se.vruntime = vruntime;
 	/* insert 100000 entries */
 	start = ktime_get();
 
 	for (i = 0; i < 100000; i++) {
 		insert(rbtree_100000 + i, &rbtree_100000_root);
-		result->se.vruntime = vruntime;
 	}
 	
 	end = ktime_get();
@@ -131,40 +119,36 @@ void RB_example(void)
 	printk("insert(100000 entries): 0.%09lld secs\n", end - start);
 
 	////////// traverse //////////
-	result->se.vruntime = vruntime;
 	printk("\n////////// search //////////\n");
 
 	/* traverse 1000 entries */
 	start = ktime_get();
 
-	for (node = rb_first(&rbtree_1000_root.rb_root); node; node = rb_next(node), result->se.vruntime = vruntime);
+	for (node = rb_first(&rbtree_1000_root.rb_root); node; node = rb_next(node));
 
 	end = ktime_get();
 
 	printk("search(1000 entries): 0.%09lld secs\n", end - start);
 
-	result->se.vruntime = vruntime;
 	/* traverse 10000 entries */
 	start = ktime_get();
 
-	for (node = rb_first(&rbtree_10000_root.rb_root); node; node = rb_next(node), result->se.vruntime = vruntime);
+	for (node = rb_first(&rbtree_10000_root.rb_root); node; node = rb_next(node));
 
 	end = ktime_get();
 
 	printk("search(10000 entries): 0.%09lld secs\n", end - start);
 
-	result->se.vruntime = vruntime;
 	/* traverse 100000 entries */
 	start = ktime_get();
 
-	for (node = rb_first(&rbtree_100000_root.rb_root); node; node = rb_next(node), result->se.vruntime = vruntime);
+	for (node = rb_first(&rbtree_100000_root.rb_root); node; node = rb_next(node));
 
 	end = ktime_get();
 
 	printk("search(100000 entries): 0.%09lld secs\n", end - start);
 
 	////////// delete //////////
-	result->se.vruntime = vruntime;
 	printk("\n////////// delete //////////\n");
 
 	/* delete 1000 entries */
@@ -172,33 +156,28 @@ void RB_example(void)
 
 	for (i = 0; i < 1000; i++) {
 		erase(rbtree_1000 + i, &rbtree_1000_root);
-		result->se.vruntime = vruntime;
 	}
 
 	end = ktime_get();
 
 	printk("delete(1000 entries): 0.%09lld secs\n", end - start);
 
-	result->se.vruntime = vruntime;
 	/* delete 10000 entries */
 	start = ktime_get();
 
 	for (i = 0; i < 10000; i++) {
 		erase(rbtree_10000 + i, &rbtree_10000_root);
-		result->se.vruntime = vruntime;
 	}
 
 	end = ktime_get();
 
 	printk("delete(10000 entries): 0.%09lld secs\n", end - start);
 
-	result->se.vruntime = vruntime;
 	/* delete 100000 entries */
 	start = ktime_get();
 
 	for (i = 0; i < 100000; i++) {
 		erase(rbtree_100000 + i, &rbtree_100000_root);
-		result->se.vruntime = vruntime;
 	}
 
 	end = ktime_get();
@@ -208,15 +187,15 @@ void RB_example(void)
 
 int __init rbtree_module_init(void)
 {
-	result = pid_task(find_vpid((int) task_pid_nr(current)), PIDTYPE_PID);
-	vruntime = result->se.vruntime;
+	struct task_struct *result = pid_task(find_vpid((int) task_pid_nr(current)), PIDTYPE_PID);
 
+	printk("\n********** rbtree testing!! **********\n");
+	printk("scheduling policy: %d\n", result->policy);
 	printk("first vruntime: %lld\n", result->se.vruntime);
 
-	printk("module init\n");
 	RB_example();
 
-	printk("second vruntime: %lld\n", result->se.vruntime);
+	printk("second vruntime: %lld\n\n", result->se.vruntime);
 
 	return 0;
 }

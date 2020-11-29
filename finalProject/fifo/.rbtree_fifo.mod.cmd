@@ -1,0 +1,1 @@
+cmd_/home/ungung97/LinuxSystem/finalProject/fifo/rbtree_fifo.mod := { echo  /home/ungung97/LinuxSystem/finalProject/fifo/rbtree_fifo.o; echo; } > /home/ungung97/LinuxSystem/finalProject/fifo/rbtree_fifo.mod

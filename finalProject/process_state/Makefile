@@ -1,4 +1,4 @@
-obj-m := process_change.o
+obj-m := get_task_struct.o
 
 KERNELDIR := /lib/modules/$(shell uname -r)/build
 
