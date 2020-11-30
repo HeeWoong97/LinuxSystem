@@ -83,7 +83,7 @@ void RB_example(void)
 	init();
 
 	////////// insert //////////
-	printk("\n////////// insert //////////\n");
+	// printk("\n////////// insert //////////\n");
 
 	/* insert 1000 entries */
 	start = ktime_get();
@@ -94,7 +94,7 @@ void RB_example(void)
 	
 	end = ktime_get();
 
-	printk("insert(1000 entries): 0.%09lld secs\n", end - start);
+	// printk("insert(1000 entries): 0.%09lld secs\n", end - start);
 
 	/* insert 10000 entries */
 	start = ktime_get();
@@ -105,7 +105,7 @@ void RB_example(void)
 	
 	end = ktime_get();
 
-	printk("insert(10000 entries): 0.%09lld secs\n", end - start);
+	// printk("insert(10000 entries): 0.%09lld secs\n", end - start);
 
 	/* insert 100000 entries */
 	start = ktime_get();
@@ -116,10 +116,10 @@ void RB_example(void)
 	
 	end = ktime_get();
 
-	printk("insert(100000 entries): 0.%09lld secs\n", end - start);
+	// printk("insert(100000 entries): 0.%09lld secs\n", end - start);
 
 	////////// traverse //////////
-	printk("\n////////// search //////////\n");
+	// printk("\n////////// search //////////\n");
 
 	/* traverse 1000 entries */
 	start = ktime_get();
@@ -128,7 +128,7 @@ void RB_example(void)
 
 	end = ktime_get();
 
-	printk("search(1000 entries): 0.%09lld secs\n", end - start);
+	// printk("search(1000 entries): 0.%09lld secs\n", end - start);
 
 	/* traverse 10000 entries */
 	start = ktime_get();
@@ -137,7 +137,7 @@ void RB_example(void)
 
 	end = ktime_get();
 
-	printk("search(10000 entries): 0.%09lld secs\n", end - start);
+	// printk("search(10000 entries): 0.%09lld secs\n", end - start);
 
 	/* traverse 100000 entries */
 	start = ktime_get();
@@ -146,10 +146,10 @@ void RB_example(void)
 
 	end = ktime_get();
 
-	printk("search(100000 entries): 0.%09lld secs\n", end - start);
+	// printk("search(100000 entries): 0.%09lld secs\n", end - start);
 
 	////////// delete //////////
-	printk("\n////////// delete //////////\n");
+	// printk("\n////////// delete //////////\n");
 
 	/* delete 1000 entries */
 	start = ktime_get();
@@ -160,7 +160,7 @@ void RB_example(void)
 
 	end = ktime_get();
 
-	printk("delete(1000 entries): 0.%09lld secs\n", end - start);
+	// printk("delete(1000 entries): 0.%09lld secs\n", end - start);
 
 	/* delete 10000 entries */
 	start = ktime_get();
@@ -171,7 +171,7 @@ void RB_example(void)
 
 	end = ktime_get();
 
-	printk("delete(10000 entries): 0.%09lld secs\n", end - start);
+	// printk("delete(10000 entries): 0.%09lld secs\n", end - start);
 
 	/* delete 100000 entries */
 	start = ktime_get();
@@ -182,20 +182,31 @@ void RB_example(void)
 
 	end = ktime_get();
 
-	printk("delete(100000 entries): 0.%09lld secs\n", end - start);
+	// printk("delete(100000 entries): 0.%09lld secs\n", end - start);
 }
 
 int __init rbtree_module_init(void)
 {
 	struct task_struct *result = pid_task(find_vpid((int) task_pid_nr(current)), PIDTYPE_PID);
+	ktime_t start, end;
+	int i;
+	
+	start = ktime_get();
 
 	printk("\n********** rbtree testing!! **********\n");
 	printk("scheduling policy: %d\n", result->policy);
 	printk("first vruntime: %lld\n", result->se.vruntime);
 
-	RB_example();
+	for (i = 0; i < 10; i++) {
+		// printk("\n////////// loop %d //////////\n", i + 1);
+		RB_example();
+		// printk("\n");
+	}
 
 	printk("second vruntime: %lld\n\n", result->se.vruntime);
+
+	end = ktime_get();
+	printk("total time: 0.%09lld secs\n", end - start);
 
 	return 0;
 }
