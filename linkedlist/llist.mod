@@ -1,2 +1,2 @@
-/home/ungung97/class/linkedlist/llist.o
+/home/ungung97/LinuxSystem/linkedlist/llist.o
 

@@ -1,1 +1,1 @@
-cmd_/home/ungung97/class/linkedlist/llist.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000  --build-id  -T ./scripts/module-common.lds -o /home/ungung97/class/linkedlist/llist.ko /home/ungung97/class/linkedlist/llist.o /home/ungung97/class/linkedlist/llist.mod.o;  true
+cmd_/home/ungung97/LinuxSystem/linkedlist/llist.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000  --build-id  -T ./scripts/module-common.lds -o /home/ungung97/LinuxSystem/linkedlist/llist.ko /home/ungung97/LinuxSystem/linkedlist/llist.o /home/ungung97/LinuxSystem/linkedlist/llist.mod.o;  true
