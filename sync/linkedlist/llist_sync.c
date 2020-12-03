@@ -26,7 +26,10 @@ unsigned int n, random;
 struct task_struct *thread1, *thread2, *thread3, *thread4;
 
 int insert_data = 0;
+
 spinlock_t lock;
+spinlock_t mainlock;
+// struct mutex my_mutex;
 
 ktime_t start, end;
 
@@ -34,33 +37,30 @@ static int insert(void *data)
 {
 	struct my_node* new;
 
-	while (!kthread_should_stop()) {
-		if (insert_data > 100000) {
-			break;
-		}
+	while (true) {
+		if (insert_data > 100000) break;
 		spin_lock(&lock);
+		// mutex_lock(&my_mutex);
 
 		new = kmalloc(sizeof(struct my_node), GFP_KERNEL);
 		new->data = insert_data++;
-		printk("pid(%u) insert %d\n", current->pid, insert_data);
 		list_add_tail(&new->list, &my_list_100000);
 
 		spin_unlock(&lock);
+		// mutex_unlock(&my_mutex);
 	}
-	
+	kthread_stop(pid_task(find_vpid((int) task_pid_nr(current)), PIDTYPE_PID));
+
 	do_exit(0);
 }
 
 // static int search(void *data)
 // {
-// 	get_random_bytes(&n, sizeof(int)); // generate random number
-// 	random = n % 100000;
-// 	printk("random number: %d\n", random);
-// 	list_for_each_entry(current_node, &my_list_100000, list) {
-// 		if (current_node->data == random) {
-// 			printk("find!\n");
-// 		}
-// 	}	
+// 	list_for_each_entry(current_node, &my_list_100000, list);
+// 	end = ktime_get_ns();
+// 	printk("total time(search): 0.%09lld secs\n", end - start);
+// 	kthread_stop(pid_task(find_vpid((int) task_pid_nr(current)), PIDTYPE_PID));
+// 	do_exit(0);
 // }
 
 // static int delete(void *data)
@@ -76,7 +76,9 @@ int __init llist_module_init(void)
 {
 	printk("llist module init\n");
 	INIT_LIST_HEAD(&my_list_100000);
+	// mutex_init(&my_mutex);
 
+	spin_lock(&mainlock);
 	start = ktime_get_ns();
 
 	thread1 = kthread_run(insert, NULL, "insert");
@@ -84,15 +86,14 @@ int __init llist_module_init(void)
 	thread3 = kthread_run(insert, NULL, "insert");
 	thread4 = kthread_run(insert, NULL, "insert");
 
-	// if (insert_data > 100000) {
+	spin_lock(&mainlock);
+
+	end = ktime_get_ns();
+	printk("total time(insert): %lld ns\n", end - start);	
+
+	// if (insert_data == 100000) {
 	// 	end = ktime_get_ns();
-
 	// 	printk("finish(%lld secs)\n", (end - start) / 1000000000);
-
-	// 	kthread_stop(thread1);
-	// 	kthread_stop(thread2);
-	// 	kthread_stop(thread3);
-	// 	kthread_stop(thread4);
 	// }
 
 	return 0;
@@ -100,10 +101,10 @@ int __init llist_module_init(void)
 
 void __exit llist_module_cleanup(void)
 {
-	kthread_stop(thread1);
-	kthread_stop(thread2);
-	kthread_stop(thread3);
-	kthread_stop(thread4);
+	// kthread_stop(thread1);
+	// kthread_stop(thread2);
+	// kthread_stop(thread3);
+	// kthread_stop(thread4);
 	printk("rm llist module\n\n");
 }
 
