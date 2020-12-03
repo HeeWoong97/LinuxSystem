@@ -1,0 +1,1 @@
+cmd_/home/ungung97/LinuxSystem/finalProject/sync/rbtree_sync.mod := { echo  /home/ungung97/LinuxSystem/finalProject/sync/rbtree_sync.o; echo; } > /home/ungung97/LinuxSystem/finalProject/sync/rbtree_sync.mod

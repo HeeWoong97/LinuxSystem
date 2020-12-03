@@ -1,0 +1,1 @@
+cmd_/home/ungung97/LinuxSystem/sync/atomic/compare_and_swap/compare_and_swap.mod := { echo  /home/ungung97/LinuxSystem/sync/atomic/compare_and_swap/compare_and_swap.o; echo; } > /home/ungung97/LinuxSystem/sync/atomic/compare_and_swap/compare_and_swap.mod

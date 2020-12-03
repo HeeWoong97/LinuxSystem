@@ -446,6 +446,15 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
 }
 EXPORT_SYMBOL(rb_erase);
 
+void rb_erase_sync(struct rb_node *node, struct rb_root *root)
+{
+	struct rb_node *rebalance;
+	rebalance = rebalance = __rb_erase_augmented_sync(node, root, &dummy_callbacks);
+	if (rebalance)
+		____rb_erase_color(rebalance, root, dummy_rotate);
+}
+EXPORT_SYMBOL(rb_erase_sync);
+
 /*
  * Augmented rbtree manipulation functions.
  *

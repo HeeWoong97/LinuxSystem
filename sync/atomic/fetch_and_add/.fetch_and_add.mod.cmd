@@ -1,0 +1,1 @@
+cmd_/home/ungung97/LinuxSystem/sync/atomic/fetch_and_add/fetch_and_add.mod := { echo  /home/ungung97/LinuxSystem/sync/atomic/fetch_and_add/fetch_and_add.o; echo; } > /home/ungung97/LinuxSystem/sync/atomic/fetch_and_add/fetch_and_add.mod

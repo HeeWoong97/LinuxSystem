@@ -1,0 +1,1 @@
+cmd_/home/ungung97/LinuxSystem/sync/linkedlist/llist_sync.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000  --build-id  -T ./scripts/module-common.lds -o /home/ungung97/LinuxSystem/sync/linkedlist/llist_sync.ko /home/ungung97/LinuxSystem/sync/linkedlist/llist_sync.o /home/ungung97/LinuxSystem/sync/linkedlist/llist_sync.mod.o;  true

@@ -1,0 +1,1 @@
+cmd_/home/ungung97/LinuxSystem/sync/atomic/test_and_set/test_and_set.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000  --build-id  -T ./scripts/module-common.lds -o /home/ungung97/LinuxSystem/sync/atomic/test_and_set/test_and_set.ko /home/ungung97/LinuxSystem/sync/atomic/test_and_set/test_and_set.o /home/ungung97/LinuxSystem/sync/atomic/test_and_set/test_and_set.mod.o;  true

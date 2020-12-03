@@ -1,0 +1,1 @@
+cmd_/home/ungung97/LinuxSystem/sync/atomic/test_and_set/test_and_set.mod := { echo  /home/ungung97/LinuxSystem/sync/atomic/test_and_set/test_and_set.o; echo; } > /home/ungung97/LinuxSystem/sync/atomic/test_and_set/test_and_set.mod

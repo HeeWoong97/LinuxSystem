@@ -7,6 +7,8 @@
 #include <asm/timex.h>
 #include <linux/ktime.h>
 #include <linux/sched.h>
+#include <linux/spinlock.h>
+#include <linux/kthread.h>
 
 struct my_node
 {
