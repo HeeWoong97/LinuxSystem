@@ -12,7 +12,33 @@ struct my_node
 {
 	int value;
 	struct rb_node rb;
+	bool islocked;
+	pid_t pid;
 };
+
+bool node_is_locked(struct my_node *node)
+{
+	return node->islocked;
+}
+
+bool unlock_node(struct my_node *node)
+{
+	if (current->pid == node->pid) {
+		node->islocked = false;
+		return true;
+	}
+	return false;
+}
+
+bool lock_node(struct my_node *node)
+{
+	if (node->islocked == false) {
+		node->islocked = true;
+		node->pid = current->pid;
+		return true;
+	}
+	return false;
+}
 
 int a;
 
@@ -45,6 +71,16 @@ void insert(struct my_node *node, struct rb_root_cached *root)
 static inline void erase(struct my_node *node, struct rb_root_cached *root)
 {
 	rb_erase(&node->rb, &root->rb_root);
+}
+
+static int erase_sync(struct my_node *node, struct rb_root_cached *root)
+{
+	if (node->islocked) { // if node is locked
+		return -1;
+	}
+	lock_node(node);
+	rb_erase(&node->rb, &root->rb_root);
+	unlock_node(node);
 }
 
 static void init(void)

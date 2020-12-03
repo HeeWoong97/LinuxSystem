@@ -217,42 +217,38 @@ __rb_erase_augmented_sync(struct rb_node *node, struct rb_root *root,
 		 * and node must be black due to 4). We adjust colors locally
 		 * so as to bypass __rb_erase_color() later on.
 		 */
-		while (!kthread_should_stop()) {
-			spin_lock(&lock);
+		spin_lock(&lock);
 
-			pc = node->__rb_parent_color;
-			parent = __rb_parent(pc);
-			__rb_change_child(node, child, parent, root);
-			if (child) {
-				child->__rb_parent_color = pc;
-				rebalance = NULL;
-			} else
-				rebalance = __rb_is_black(pc) ? parent : NULL;
-			tmp = parent;
+		pc = node->__rb_parent_color;
+		parent = __rb_parent(pc);
+		__rb_change_child(node, child, parent, root);
+		if (child) {
+			child->__rb_parent_color = pc;
+			rebalance = NULL;
+		} else
+			rebalance = __rb_is_black(pc) ? parent : NULL;
+		tmp = parent;
 
-			augment->propagate(tmp, NULL);
+		augment->propagate(tmp, NULL);
 
-			spin_unlock(&lock);
+		spin_unlock(&lock);
 
-			return rebalance;
-		}	
+		return rebalance;
 	} else if (!child) {
 		/* Still case 1, but this time the child is node->rb_left */
-		while (!kthread_should_stop()) {
-			spin_lock(&lock);
+		spin_lock(&lock);
 
-			tmp->__rb_parent_color = pc = node->__rb_parent_color;
-			parent = __rb_parent(pc);
-			__rb_change_child(node, tmp, parent, root);
-			rebalance = NULL;
-			tmp = parent;
+		tmp->__rb_parent_color = pc = node->__rb_parent_color;
+		parent = __rb_parent(pc);
+		__rb_change_child(node, tmp, parent, root);
+		rebalance = NULL;
+		tmp = parent;
 
-			augment->propagate(tmp, NULL);
+		augment->propagate(tmp, NULL);
 
-			spin_unlock(&lock);
+		spin_unlock(&lock);
 
-			return rebalance;
-		}
+		return rebalance;
 	} else {
 		struct rb_node *successor = child, *child2;
 
@@ -267,37 +263,35 @@ __rb_erase_augmented_sync(struct rb_node *node, struct rb_root *root,
 			 *        \
 			 *        (c)
 			 */
-			while (!kthread_should_stop()) {
-				spin_lock(&lock);
-				
-				parent = successor;
-				child2 = successor->rb_right;
+			spin_lock(&lock);
+			
+			parent = successor;
+			child2 = successor->rb_right;
 
-				augment->copy(node, successor);
+			augment->copy(node, successor);
 
-				tmp = node->rb_left;
-				WRITE_ONCE(successor->rb_left, tmp);
-				rb_set_parent(tmp, successor);
+			tmp = node->rb_left;
+			WRITE_ONCE(successor->rb_left, tmp);
+			rb_set_parent(tmp, successor);
 
-				pc = node->__rb_parent_color;
-				tmp = __rb_parent(pc);
-				__rb_change_child(node, successor, tmp, root);
+			pc = node->__rb_parent_color;
+			tmp = __rb_parent(pc);
+			__rb_change_child(node, successor, tmp, root);
 
-				if (child2) {
-					rb_set_parent_color(child2, parent, RB_BLACK);
-					rebalance = NULL;
-				} else {
-					rebalance = rb_is_black(successor) ? parent : NULL;
-				}
-				successor->__rb_parent_color = pc;
-				tmp = successor;
-
-				augment->propagate(tmp, NULL);
-
-				spin_unlock(&lock);
-
-				return rebalance;
+			if (child2) {
+				rb_set_parent_color(child2, parent, RB_BLACK);
+				rebalance = NULL;
+			} else {
+				rebalance = rb_is_black(successor) ? parent : NULL;
 			}
+			successor->__rb_parent_color = pc;
+			tmp = successor;
+
+			augment->propagate(tmp, NULL);
+
+			spin_unlock(&lock);
+
+			return rebalance;
 		} else {
 			/*
 			 * Case 3: node's successor is leftmost under
@@ -313,45 +307,43 @@ __rb_erase_augmented_sync(struct rb_node *node, struct rb_root *root,
 			 *    \
 			 *    (c)
 			 */
-			while (!kthread_should_stop()) {
-				spin_lock(&lock);
+			spin_lock(&lock);
 
-				do {
-					parent = successor;
-					successor = tmp;
-					tmp = tmp->rb_left;
-				} while (tmp);
-				child2 = successor->rb_right;
-				WRITE_ONCE(parent->rb_left, child2);
-				WRITE_ONCE(successor->rb_right, child);
-				rb_set_parent(child, successor);
+			do {
+				parent = successor;
+				successor = tmp;
+				tmp = tmp->rb_left;
+			} while (tmp);
+			child2 = successor->rb_right;
+			WRITE_ONCE(parent->rb_left, child2);
+			WRITE_ONCE(successor->rb_right, child);
+			rb_set_parent(child, successor);
 
-				augment->copy(node, successor);
-				augment->propagate(parent, successor);
+			augment->copy(node, successor);
+			augment->propagate(parent, successor);
 
-				tmp = node->rb_left;
-				WRITE_ONCE(successor->rb_left, tmp);
-				rb_set_parent(tmp, successor);
+			tmp = node->rb_left;
+			WRITE_ONCE(successor->rb_left, tmp);
+			rb_set_parent(tmp, successor);
 
-				pc = node->__rb_parent_color;
-				tmp = __rb_parent(pc);
-				__rb_change_child(node, successor, tmp, root);
+			pc = node->__rb_parent_color;
+			tmp = __rb_parent(pc);
+			__rb_change_child(node, successor, tmp, root);
 
-				if (child2) {
-					rb_set_parent_color(child2, parent, RB_BLACK);
-					rebalance = NULL;
-				} else {
-					rebalance = rb_is_black(successor) ? parent : NULL;
-				}
-				successor->__rb_parent_color = pc;
-				tmp = successor;
-
-				augment->propagate(tmp, NULL);
-
-				spin_unlock(&lock);
-
-				return rebalance;
+			if (child2) {
+				rb_set_parent_color(child2, parent, RB_BLACK);
+				rebalance = NULL;
+			} else {
+				rebalance = rb_is_black(successor) ? parent : NULL;
 			}
+			successor->__rb_parent_color = pc;
+			tmp = successor;
+
+			augment->propagate(tmp, NULL);
+
+			spin_unlock(&lock);
+
+			return rebalance;
 		}
 
 		// tmp = node->rb_left;
