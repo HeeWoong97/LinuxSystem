@@ -803,6 +803,9 @@ deps_/home/ungung97/LinuxSystem/finalProject/divide/rbtree_divide.o := \
   include/linux/alarmtimer.h \
   include/uapi/linux/rseq.h \
   include/linux/kthread.h \
+  include/linux/delay.h \
+  arch/x86/include/asm/delay.h \
+  include/asm-generic/delay.h \
 
 /home/ungung97/LinuxSystem/finalProject/divide/rbtree_divide.o: $(deps_/home/ungung97/LinuxSystem/finalProject/divide/rbtree_divide.o)
 
