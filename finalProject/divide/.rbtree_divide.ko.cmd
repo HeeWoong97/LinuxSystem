@@ -1,0 +1,1 @@
+cmd_/home/ungung97/LinuxSystem/finalProject/divide/rbtree_divide.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000  --build-id  -T ./scripts/module-common.lds -o /home/ungung97/LinuxSystem/finalProject/divide/rbtree_divide.ko /home/ungung97/LinuxSystem/finalProject/divide/rbtree_divide.o /home/ungung97/LinuxSystem/finalProject/divide/rbtree_divide.mod.o;  true

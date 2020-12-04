@@ -9,6 +9,8 @@
 #include <linux/sched.h>
 #include <linux/spinlock.h>
 #include <linux/kthread.h>
+#include <linux/delay.h>
+#include <linux/mutex.h>
 
 struct my_node
 {
@@ -19,33 +21,42 @@ struct my_node
 struct my_node_sync
 {
 	struct my_node node;
-	bool islocked;
-	pid_t pid;
+	// bool islocked;
+	// pid_t pid;
+	spinlock_t lock;
 };
 
-bool node_is_locked(struct my_node_sync *node)
+struct arguments
 {
-	return node->islocked;
-}
+	struct my_node_sync *node;
+	struct rb_root_cached *root;
+};
 
-bool unlock_node(struct my_node_sync *node)
-{
-	if (current->pid == node->pid) {
-		node->islocked = false;
-		return true;
-	}
-	return false;
-}
+struct mutex my_mutex;
 
-bool lock_node(struct my_node_sync *node)
-{
-	if (node->islocked == false) {
-		node->islocked = true;
-		node->pid = current->pid;
-		return true;
-	}
-	return false;
-}
+// bool node_is_locked(struct my_node_sync *node)
+// {
+// 	return node->islocked;
+// }
+
+// bool unlock_node(struct my_node_sync *node)
+// {
+// 	if (current->pid == node->pid) {
+// 		node->islocked = false;
+// 		return true;
+// 	}
+// 	return false;
+// }
+
+// bool lock_node(struct my_node_sync *node)
+// {
+// 	if (node->islocked == false) {
+// 		node->islocked = true;
+// 		node->pid = current->pid;
+// 		return true;
+// 	}
+// 	return false;
+// }
 
 struct task_struct *thread1, *thread2;
 
@@ -83,19 +94,30 @@ static inline void erase(struct my_node *node, struct rb_root_cached *root)
 	rb_erase(&node->rb, &root->rb_root);
 }
 
-static int erase_sync(struct my_node_sync *node, struct rb_root_cached *root)
+static int erase_sync(void *arguments)
 {
-	while (!kthread_should_stop()) {
-		if (count == 100000) {
+	// struct arguments *args = arguments;
+	// struct my_node_sync *targetnode = args->node;
+	// struct rb_root_cached *targetroot = args->root;
+
+	while (1) {
+		if (count == 50) {
 			break;
 		}
-		if (node->islocked) { // if node is locked
-			continue;
-		}
-		lock_node(node);
-		rb_erase(&(node->node.rb), &root->rb_root);
-		unlock_node(node);
-		count++;
+		// if (targetnode->islocked) { // if node is locked
+		// 	continue;
+		// }
+		// lock_node(targetnode);
+		mutex_lock(&my_mutex);
+		// printk("pid %d deleted %d node(value: %d)\n", current->pid, targetnode->node.value, count);
+		// rb_erase(&(targetnode->node.rb), &(targetroot->rb_root));
+		printk("pid: %d, count: %d\n", current->pid, count++);
+		// unlock_node(targetnode);
+		mutex_unlock(&my_mutex);
+		// count++;
+		// msleep(500);
+		// targetnode += count;
+		msleep(1);
 	}
 	kthread_stop(pid_task(find_vpid((int) task_pid_nr(current)), PIDTYPE_PID));
 	do_exit(0);
@@ -108,8 +130,9 @@ static void init(void)
 		rbtree_100000[i].value = prandom_u32_state(&rnd);
 
 		rbtree_sync[i].node.value = prandom_u32_state(&rnd);
-		rbtree_sync[i].islocked = false;
-		rbtree_sync[i].pid = 0;
+		// rbtree_sync[i].islocked = false;
+		// rbtree_sync[i].pid = 0;
+		spin_lock_init(&rbtree_sync[i].lock);
 	}	
 }
 
@@ -118,6 +141,7 @@ void RB_example(void)
 	int i;
 	ktime_t start, end;
 	struct rb_node *node;
+	struct arguments args;
 
 	rbtree_100000 = kmalloc_array(100000, sizeof(*rbtree_100000), GFP_KERNEL);
 	rbtree_sync = kmalloc_array(100000, sizeof(*rbtree_sync), GFP_KERNEL);
@@ -173,6 +197,11 @@ void RB_example(void)
 
 	end = ktime_get();
 
+	args.node = rbtree_sync;
+	args.root = &rbtree_sync_root;
+
+	// thread1 = kthread_run(erase_sync, &args, "erase_sync");
+	// thread2 = kthread_run(erase_sync, &args, "erase_sync");
 	thread1 = kthread_run(erase_sync, NULL, "erase_sync");
 	thread2 = kthread_run(erase_sync, NULL, "erase_sync");
 
@@ -187,6 +216,8 @@ int __init rbtree_module_init(void)
 
 	count = 0;
 	
+	mutex_init(&my_mutex);
+
 	start = ktime_get();
 
 	printk("\n********** rbtree testing!! **********\n");
@@ -205,6 +236,8 @@ int __init rbtree_module_init(void)
 
 void __exit rbtree_module_cleanup(void)
 {
+	// kthread_stop(thread1);
+	// kthread_stop(thread2);
 	printk("\nBye module\n");
 }
 
