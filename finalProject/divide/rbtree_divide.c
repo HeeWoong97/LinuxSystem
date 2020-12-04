@@ -33,11 +33,18 @@ static struct my_node *rbtree2 = NULL;
 static struct my_node *rbtree3 = NULL;
 static struct my_node *rbtree4 = NULL;
 
+struct arguments
+{
+	struct rb_root_cached *root;
+	struct my_node *node;
+};
+
 static struct rnd_state rnd;
 
-spinlock_t lock;
+ktime_t t_start, t_end;
 
 int running_thread = 0;
+int sequence = 0;
 
 int check = 0;
 
@@ -60,104 +67,69 @@ void insert(struct my_node *node, struct rb_root_cached *root)
 	rb_insert_color(&node->rb, &root->rb_root);
 }
 
-static int insert1(void *data)
-{
-	int i;
-	running_thread++;
-	for (i = 0; i < 25000; i++) {
-		insert(rbtree1 + i, &rbtree1_root);
-	}	
-	running_thread--;
-	kthread_stop(thread1);
-	return 0;
-}
-
-static int insert2(void *data)
-{
-	int i;
-	running_thread++;
-	for (i = 0; i < 25000; i++) {
-		insert(rbtree2 + i, &rbtree2_root);
-	}
-	running_thread--;
-	kthread_stop(thread2);
-	return 0;
-}
-
-static int insert3(void *data)
-{
-	int i;
-	running_thread++;
-	for (i = 0; i < 25000; i++) {
-		insert(rbtree3 + i, &rbtree3_root);
-	}
-	running_thread--;
-	kthread_stop(thread3);
-	return 0;
-}
-
-static int insert4(void *data)
-{
-	int i;
-	running_thread++;
-	for (i = 0; i < 25000; i++) {
-		insert(rbtree4 + i, &rbtree4_root);
-	}
-	running_thread--;
-	kthread_stop(thread4);
-	return 0;	
-}
-
 static inline void erase(struct my_node *node, struct rb_root_cached *root)
 {
 	rb_erase(&node->rb, &root->rb_root);
 }
 
-static int erase1(void *data)
+static int insert_sync(void *data)
 {
 	int i;
+	struct arguments *args = data;
+
 	running_thread++;
-	for (i = 0; i < 100000; i++) {
-		erase(rbtree1 + i, &rbtree1_root);
-	}
+	sequence++;
+	for (i = 0; i < 25000; i++) {
+		insert(args->node + i, args->root);
+	}	
 	running_thread--;
-	kthread_stop(thread1);
+	// printk("insert finished pid(%d)\n", current->pid);
+	if (sequence == 4) {
+		t_end = ktime_get_ns();
+		printk("insert(threaded): %lld ns\n", t_end - t_start);
+		sequence = 0;
+	}
+	kthread_stop(current);
 	return 0;
 }
 
-static int erase2(void *data)
+static int search_sync(void *data)
 {
-	int i;
+	struct rb_node *node;
+	struct arguments *args = data;
+
 	running_thread++;
-	for (i = 0; i < 100000; i++) {
-		erase(rbtree2 + i, &rbtree2_root);
-	}
+	sequence++;
+	for (node = rb_first(&(args->root->rb_root)); node; node = rb_next(node));
 	running_thread--;
-	kthread_stop(thread2);
-	return 0;
+	// printk("search finished pid(%d)\n", current->pid);
+	if (sequence == 4) {
+		t_end = ktime_get_ns();
+		printk("search(threaded): %lld ns\n", t_end - t_start);
+		sequence = 0;
+	}
+	kthread_stop(current);
+	return 0;	
 }
 
-static int erase3(void *data)
+static int erase_sync(void *data)
 {
 	int i;
-	running_thread++;
-	for (i = 0; i < 100000; i++) {
-		erase(rbtree3 + i, &rbtree3_root);
-	}
-	running_thread--;
-	kthread_stop(thread3);
-	return 0;
-}
+	struct arguments *args = data;
 
-static int erase4(void *data)
-{
-	int i;
 	running_thread++;
-	for (i = 0; i < 100000; i++) {
-		erase(rbtree4 + i, &rbtree4_root);
+	sequence++;
+	for (i = 0; i < 25000; i++) {
+		erase(args->node + i, args->root);
 	}
 	running_thread--;
-	kthread_stop(thread4);
+	// printk("delete finished pid(%d)\n", current->pid);
+	if (sequence == 4) {
+		t_end = ktime_get_ns();
+		printk("delete(threaded): %lld ns\n", t_end - t_start);
+		sequence = 0;
+	}
+	kthread_stop(current);
 	return 0;
 }
 
@@ -182,6 +154,7 @@ int __init rbtree_module_init(void)
 	int i;
 	ktime_t start, end;
 	struct rb_node *node;
+	struct arguments args1, args2, args3, args4;
 
 	rbtree = kmalloc_array(100000, sizeof(*rbtree), GFP_KERNEL);
 	rbtree1 = kmalloc_array(25000, sizeof(*rbtree1), GFP_KERNEL);
@@ -192,12 +165,12 @@ int __init rbtree_module_init(void)
 	prandom_seed_state(&rnd, 3141592653589793238ULL);
 	init();
 
-	spin_lock_init(&lock);
+	args1.root = &rbtree1_root; args1.node = rbtree1;
+	args2.root = &rbtree2_root; args2.node = rbtree2;
+	args3.root = &rbtree3_root; args3.node = rbtree3;
+	args4.root = &rbtree4_root; args4.node = rbtree4;
 
-	////////// insert //////////
-	// printk("\n////////// insert //////////\n");
-
-	/* insert 100000 entries */
+	printk("\n////////// insert //////////\n");
 
 	start = ktime_get_ns();
 
@@ -208,44 +181,41 @@ int __init rbtree_module_init(void)
 	end = ktime_get_ns();
 	printk("insert(normal): %lld ns\n", end - start);
 
-	// spin_lock(&lock);
-	start = ktime_get_ns();
+	t_start = ktime_get_ns();
 
-	thread1 = kthread_run(insert1, NULL, "insert1");
-	thread2 = kthread_run(insert2, NULL, "insert2");
-	thread3 = kthread_run(insert3, NULL, "insert3");
-	thread4 = kthread_run(insert4, NULL, "insert4");
+	thread1 = kthread_run(insert_sync, &args1, "insert1");
+	thread2 = kthread_run(insert_sync, &args2, "insert2");
+	thread3 = kthread_run(insert_sync, &args3, "insert3");
+	thread4 = kthread_run(insert_sync, &args4, "insert4");
 
 	while (running_thread > 0) {
 		msleep(1);
 	}
+
+
+	printk("\n////////// search //////////\n");
+
+	start = ktime_get_ns();
+
+	for (node = rb_first(&rbtree_root.rb_root); node; node = rb_next(node));
+
 	end = ktime_get_ns();
-	printk("insert(threaded): %lld ns\n", end - start);
+	printk("search(normal): %lld ns\n", end - start);
 
-	thread1 = NULL;
-	thread2 = NULL;
-	thread3 = NULL;
-	thread4 = NULL;
+	t_start = ktime_get_ns();
 
-	// spin_unlock(&lock);
-	// end = ktime_get_ns();
-	// printk("insert(threaded): %lld ns\n", end - start);
+	thread1 = kthread_run(search_sync, &args1, "search1");
+	thread2 = kthread_run(search_sync, &args2, "search2");
+	thread3 = kthread_run(search_sync, &args3, "search3");
+	thread4 = kthread_run(search_sync, &args4, "search4");
 
-	////////// traverse //////////
-	// printk("\n////////// search //////////\n");
+	while (running_thread > 0) {
+		msleep(1);
+	}	
 
-	/* traverse 100000 entries */
-	// start = ktime_get_ns();
 
-	// for (node = rb_first(&rbtree_100000_root.rb_root); node; node = rb_next(node));
+	printk("\n////////// delete //////////\n");
 
-	// end = ktime_get_ns();
-	// printk("traverse: %lld ns\n", end - start);
-
-	////////// delete //////////
-	// printk("\n////////// delete //////////\n");
-
-	/* delete 100000 entries */
 	start = ktime_get();
 
 	for (i = 0; i < 100000; i++) {
@@ -255,18 +225,16 @@ int __init rbtree_module_init(void)
 	end = ktime_get();
 	printk("delete(normal): %lld ns\n", end - start);
 
-	start = ktime_get_ns();
+	t_start = ktime_get_ns();
 
-	thread1 = kthread_run(erase1, NULL, "erase1");
-	thread2 = kthread_run(erase2, NULL, "erase2");
-	thread3 = kthread_run(erase3, NULL, "erase3");
-	thread4 = kthread_run(erase4, NULL, "erase4");
+	thread1 = kthread_run(erase_sync, &args1, "erase1");
+	thread2 = kthread_run(erase_sync, &args2, "erase2");
+	thread3 = kthread_run(erase_sync, &args3, "erase3");
+	thread4 = kthread_run(erase_sync, &args4, "erase4");
 
 	while (running_thread > 0) {
 		msleep(1);
 	}
-	end = ktime_get_ns();
-	printk("delete(threaded): %lld ns\n", end - start);
 
 	kfree(rbtree);
 	kfree(rbtree1);
@@ -274,16 +242,13 @@ int __init rbtree_module_init(void)
 	kfree(rbtree3);
 	kfree(rbtree4);
 
+	printk("finished\n");
+
 	return 0;
 }
 
 void __exit rbtree_module_cleanup(void)
 {
-	// kthread_stop(thread1);
-	// kthread_stop(thread2);
-	// kthread_stop(thread3);
-	// kthread_stop(thread4);
-
 	printk("\nBye module\n");
 }
 
