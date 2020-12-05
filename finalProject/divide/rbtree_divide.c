@@ -46,8 +46,6 @@ ktime_t t_start, t_end;
 int running_thread = 0;
 int sequence = 0;
 
-int check = 0;
-
 void insert(struct my_node *node, struct rb_root_cached *root)
 {
 	struct rb_node **new = &root->rb_root.rb_node, *parent = NULL;
@@ -138,14 +136,25 @@ static void init(void)
 	int i;
 	for (i = 0; i < 100000; i++) {
 		if (i < 25000) {
-			rbtree[i].value = prandom_u32_state(&rnd);
-			rbtree1[i].value = prandom_u32_state(&rnd);
-			rbtree2[i].value = prandom_u32_state(&rnd);
-			rbtree3[i].value = prandom_u32_state(&rnd);
-			rbtree4[i].value = prandom_u32_state(&rnd);
+			rbtree[i].value = i;
+			rbtree1[i].value = i;
 			continue;
 		}
-		rbtree[i].value = prandom_u32_state(&rnd);
+		else if (i < 50000) {
+			rbtree[i].value = i;
+			rbtree2[i].value = i;
+			continue;
+		}
+		else if (i < 75000) {
+			rbtree[i].value = i;
+			rbtree3[i].value = i;
+			continue;
+		}
+		else if (i < 100000) {
+			rbtree[i].value = i;
+			rbtree4[i].value = i;
+			continue;
+		}
 	}	
 }
 
@@ -156,6 +165,9 @@ int __init rbtree_module_init(void)
 	struct rb_node *node;
 	struct arguments args1, args2, args3, args4;
 
+	unsigned int n;
+	int random;
+
 	rbtree = kmalloc_array(100000, sizeof(*rbtree), GFP_KERNEL);
 	rbtree1 = kmalloc_array(25000, sizeof(*rbtree1), GFP_KERNEL);
 	rbtree2 = kmalloc_array(25000, sizeof(*rbtree2), GFP_KERNEL);
@@ -165,12 +177,15 @@ int __init rbtree_module_init(void)
 	prandom_seed_state(&rnd, 3141592653589793238ULL);
 	init();
 
+	printk("%d\n", prandom_u32_state(&rnd));
+	printk("%d\n", prandom_u32_state(&rnd));
+
 	args1.root = &rbtree1_root; args1.node = rbtree1;
 	args2.root = &rbtree2_root; args2.node = rbtree2;
 	args3.root = &rbtree3_root; args3.node = rbtree3;
 	args4.root = &rbtree4_root; args4.node = rbtree4;
 
-	printk("\n////////// insert //////////\n");
+	// printk("\n////////// insert //////////\n");
 
 	start = ktime_get_ns();
 
@@ -193,14 +208,23 @@ int __init rbtree_module_init(void)
 	}
 
 
-	printk("\n////////// search //////////\n");
+	// printk("\n////////// search //////////\n");
+
+	get_random_bytes(&n, sizeof(int));
+	random = n % 100000;
+	printk("random value: %d\n", random);
 
 	start = ktime_get_ns();
 
-	for (node = rb_first(&rbtree_root.rb_root); node; node = rb_next(node));
+	for (node = rb_first(&rbtree_root.rb_root); node; node = rb_next(node)) {
+		if (rb_entry(node, struct my_node, rb)->value == random){
+			end = ktime_get_ns();
+			printk("search(normal): %lld ns\n", end - start);	
+		}
+	}
 
-	end = ktime_get_ns();
-	printk("search(normal): %lld ns\n", end - start);
+	// end = ktime_get_ns();
+	// printk("search(normal): %lld ns\n", end - start);
 
 	t_start = ktime_get_ns();
 
@@ -214,7 +238,7 @@ int __init rbtree_module_init(void)
 	}	
 
 
-	printk("\n////////// delete //////////\n");
+	// printk("\n////////// delete //////////\n");
 
 	start = ktime_get();
 
