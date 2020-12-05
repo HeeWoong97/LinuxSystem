@@ -40,6 +40,9 @@ struct arguments
 };
 
 static struct rnd_state rnd;
+unsigned int n;
+int random;
+bool find = false;
 
 ktime_t t_start, t_end;
 
@@ -98,14 +101,24 @@ static int search_sync(void *data)
 
 	running_thread++;
 	sequence++;
-	for (node = rb_first(&(args->root->rb_root)); node; node = rb_next(node));
+	for (node = rb_first(&(args->root->rb_root)); node; node = rb_next(node)) {
+		if (find) {
+			break;
+		}
+		if (rb_entry(node, struct my_node, rb)->value == random) {
+			t_end = ktime_get();
+			printk("search(threaded): %lld ns\n", t_end - t_start);
+			find = true;
+			break;
+		}
+	}
 	running_thread--;
 	// printk("search finished pid(%d)\n", current->pid);
-	if (sequence == 4) {
-		t_end = ktime_get_ns();
-		printk("search(threaded): %lld ns\n", t_end - t_start);
-		sequence = 0;
-	}
+	//if (sequence == 4) {
+	//	t_end = ktime_get_ns();
+	// 	printk("search(threaded): %lld ns\n", t_end - t_start);
+	//	sequence = 0;
+	//}
 	kthread_stop(current);
 	return 0;	
 }
@@ -165,9 +178,6 @@ int __init rbtree_module_init(void)
 	struct rb_node *node;
 	struct arguments args1, args2, args3, args4;
 
-	unsigned int n;
-	int random;
-
 	rbtree = kmalloc_array(100000, sizeof(*rbtree), GFP_KERNEL);
 	rbtree1 = kmalloc_array(25000, sizeof(*rbtree1), GFP_KERNEL);
 	rbtree2 = kmalloc_array(25000, sizeof(*rbtree2), GFP_KERNEL);
@@ -176,9 +186,6 @@ int __init rbtree_module_init(void)
 
 	prandom_seed_state(&rnd, 3141592653589793238ULL);
 	init();
-
-	printk("%d\n", prandom_u32_state(&rnd));
-	printk("%d\n", prandom_u32_state(&rnd));
 
 	args1.root = &rbtree1_root; args1.node = rbtree1;
 	args2.root = &rbtree2_root; args2.node = rbtree2;
