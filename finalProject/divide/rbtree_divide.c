@@ -41,6 +41,9 @@ struct arguments
 
 ktime_t t_start, t_end;
 
+unsigned int n;
+int random;
+
 int complete_thread = 0;
 bool finish = false;
 
@@ -87,8 +90,8 @@ static int insert_sync(void *data)
 				finish = true;
 			}
 		}
+		msleep(10);
 	}
-
 	do_exit(0);
 }
 
@@ -106,11 +109,12 @@ static int search_sync(void *data)
 					t_end = ktime_get();
 					printk("search(threaded): %lld ns\n", t_end - t_start);
 					finish = true;
+					break;
 				}
 			}
 		}
+		msleep(10);
 	}
-
 	do_exit(0);
 }
 
@@ -133,8 +137,8 @@ static int erase_sync(void *data)
 				finish = true;
 			}
 		}
+		msleep(10);
 	}
-
 	do_exit(0);
 }
 
@@ -147,15 +151,15 @@ static void init(void)
 	}
 	for (i = 25000; i < 50000; i++) {
 		rbtree[i].value = i;
-		rbtree2[i].value = i;
+		rbtree2[i - 25000].value = i;
 	}	
 	for (i = 50000; i < 75000; i++) {
 		rbtree[i].value = i;
-		rbtree3[i].value = i;
+		rbtree3[i - 50000].value = i;
 	}	
 	for (i = 75000; i < 100000; i++) {
 		rbtree[i].value = i;
-		rbtree4[i].value = i;
+		rbtree4[i - 75000].value = i;
 	}		
 }
 
@@ -188,7 +192,7 @@ int __init rbtree_module_init(void)
 	}
 
 	end = ktime_get_ns();
-	printk("insert(normal): %lld ns\n", end - start);
+	printk("\ninsert(normal): %lld ns\n", end - start);
 
 	t_start = ktime_get_ns();
 
@@ -212,8 +216,8 @@ int __init rbtree_module_init(void)
 	// printk("\n////////// search //////////\n");
 
 	get_random_bytes(&n, sizeof(int));
-	random = n % 100000;
-	printk("random value: %d\n", random);
+	random = 25000;
+	printk("\nrandom value: %d\n", random);
 
 	start = ktime_get_ns();
 
@@ -221,6 +225,7 @@ int __init rbtree_module_init(void)
 		if (rb_entry(node, struct my_node, rb)->value == random){
 			end = ktime_get_ns();
 			printk("search(normal): %lld ns\n", end - start);	
+			break;
 		}
 	}
 
@@ -252,7 +257,7 @@ int __init rbtree_module_init(void)
 	}
 
 	end = ktime_get();
-	printk("delete(normal): %lld ns\n", end - start);
+	printk("\ndelete(normal): %lld ns\n", end - start);
 
 	t_start = ktime_get_ns();
 
